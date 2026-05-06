@@ -7,13 +7,12 @@
 <body>
 
 <h1>LostInBerlin</h1>
-
 <ul id="feed">Loading...</ul>
 
 <script>
 (async function () {
   try {
-    const res = await fetch("https://lostinberlin.com/feed/");
+    const res = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://www.lostinberlin.com/feed/"));
     const text = await res.text();
 
     const xml = new DOMParser().parseFromString(text, "text/xml");
@@ -22,28 +21,19 @@
     const feed = document.getElementById("feed");
     feed.innerHTML = "";
 
-    if (!items.length) {
-      feed.innerHTML = "<li>No articles found</li>";
-      return;
-    }
-
     for (let i = 0; i < items.length; i++) {
-
       const title = items[i].getElementsByTagName("title")[0]?.textContent;
       const link = items[i].getElementsByTagName("link")[0]?.textContent;
 
-      // immagine (RankMath / WP SEO)
+      // immagine (RankMath / WordPress)
       const img =
-        items[i].getElementsByTagName("image:loc")[0]?.textContent ||
-        items[i].getElementsByTagName("media:content")[0]?.getAttribute("url");
+        items[i].getElementsByTagName("image:loc")[0]?.textContent;
 
       const li = document.createElement("li");
 
       li.innerHTML = `
-        <a href="${link}" target="_blank">
-          ${img ? `<img src="${img}" style="width:120px;display:block;margin-bottom:5px;">` : ""}
-          ${title}
-        </a>
+        ${img ? `<img src="${img}" width="120"><br>` : ""}
+        <a href="${link}" target="_blank">${title}</a>
       `;
 
       feed.appendChild(li);
@@ -51,7 +41,7 @@
 
   } catch (e) {
     document.getElementById("feed").innerHTML =
-      "<li>Error loading (CORS or blocked)</li>";
+      "<li>Error loading</li>";
     console.log(e);
   }
 })();
