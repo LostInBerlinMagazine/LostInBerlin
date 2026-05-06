@@ -6,28 +6,11 @@
 </head>
 <body>
     <h1>LostInBerlin</h1>
-    <div id="rss-feed">Loading links...</div>
-
-    <script>
-        const RSS_URL = 'https://www.lostinberlin.com/feed/';
-        // Usiamo un servizio alternativo per convertire l'XML in JSON
-        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&count=100&api_key=4p3o6o0o6o0o6o0o6o0o6o0o6o0o6o0o`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'ok') {
-                    let html = '<ul>';
-                    data.items.forEach(item => {
-                        html += `<li><a href="${item.link}">${item.title}</a></li>`;
-                    });
-                    html += '</ul>';
-                    document.getElementById('rss-feed').innerHTML = html;
-                } else {
-                    document.getElementById('rss-feed').innerHTML = "Il server è sovraccarico, ricarica tra 10 secondi.";
-                }
-            })
-            .catch(err => {
-                document.getElementById('rss-feed').innerHTML = "Riprova ricaricando la pagina.";
-            });
-    </script>
+    <div id="rss-feed">
+        <script src="https://feed2js.org/feed2js.php?src=https%3A%2F%2Flostinberlin.com%2Ffeed%2F&num=100&targ=y&utf=y" type="text/javascript"></script>
+        <noscript>
+            <a href="https://lostinberlin.com/feed/">View my RSS feed</a>
+        </noscript>
+    </div>
 </body>
 </html>
