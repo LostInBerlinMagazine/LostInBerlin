@@ -16,39 +16,60 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Fetch RSS
+      - name: Build index from RSS (Node)
         run: |
-          curl -L https://www.lostinberlin.com/feed/ -o feed.xml
+          node - << 'EOF'
+          const https = require("https");
+          const fs = require("fs");
 
-      - name: Build HTML from RSS
-        run: |
-          echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
+          https.get("https://www.lostinberlin.com/feed/", (res) => {
+            let data = "";
 
-          awk -v RS="</item>" '
-          /<item>/ {
-            title=""
-            link=""
-            img=""
+            res.on("data", chunk => data += chunk);
 
-            if (match($0, /<title><!\[CDATA\[(.*?)\]\]><\/title>/, a)) title=a[1]
-            else if (match($0, /<title>(.*?)<\/title>/, a)) title=a[1]
+            res.on("end", () => {
 
-            if (match($0, /<link>(.*?)<\/link>/, a)) link=a[1]
+              const items = [...data.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
-            if (match($0, /<img[^>]*src="([^"]+)"/, a)) img=a[1]
+              let html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>LostInBerlin</title>
+</head>
+<body>
+<h1>LostInBerlin</h1>
+<ul>
+`;
 
-            if (title != "" && link != "") {
-              print "<li>"
+              for (const item of items) {
+                const block = item[1];
 
-              if (img != "") {
-                print "<img src=\"" img "\" width=\"120\"><br>"
+                const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || [])[1]
+                           || (block.match(/<title>(.*?)<\/title>/) || [])[1];
+
+                const link = (block.match(/<link>(.*?)<\/link>/) || [])[1];
+
+                const img = (block.match(/<img[^>]*src="([^"]+)"/) || [])[1];
+
+                html += "<li>";
+
+                if (img) {
+                  html += `<img src="${img}" width="120"><br>`;
+                }
+
+                html += `<a href="${link}" target="_blank">${title}</a></li>`;
               }
 
-              print "<a href=\"" link "\" target=\"_blank\">" title "</a></li>"
-            }
-          }' feed.xml >> index.html
+              html += "</ul></body></html>";
 
-          echo '</ul></body></html>' >> index.html
+              fs.writeFileSync("index.html", html);
+              console.log("done");
+            });
+
+          }).on("error", console.error);
+          EOF
 
       - name: Commit and push
         run: |
