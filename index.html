@@ -2,45 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LostInBerlin Sitemap</title>
+  <title>LostInBerlin - This is Berlin!</title>
 </head>
 <body>
 
 <h1>LostInBerlin</h1>
 
-<ul id="list">Loading...</ul>
+<ul id="feed">Loading...</ul>
 
 <script>
 (async function () {
   try {
-    const proxyUrl = "https://api.allorigins.win/raw?url=";
-    const target = encodeURIComponent("https://www.lostinberlin.com/post-sitemap.xml");
-
-    const res = await fetch(proxyUrl + target);
+    const res = await fetch("https://lostinberlin.com/feed/");
     const text = await res.text();
 
     const xml = new DOMParser().parseFromString(text, "text/xml");
-    const locs = xml.getElementsByTagName("loc");
+    const items = xml.getElementsByTagName("item");
 
-    const list = document.getElementById("list");
-    list.innerHTML = "";
+    const feed = document.getElementById("feed");
+    feed.innerHTML = "";
 
-    if (!locs.length) {
-      list.innerHTML = "<li>No URLs found</li>";
+    if (!items.length) {
+      feed.innerHTML = "<li>No articles found</li>";
       return;
     }
 
-    for (let i = 0; i < locs.length; i++) {
-      const url = locs[i].textContent;
+    for (let i = 0; i < items.length; i++) {
+
+      const title = items[i].getElementsByTagName("title")[0]?.textContent;
+      const link = items[i].getElementsByTagName("link")[0]?.textContent;
+
+      // immagine (RankMath / WP SEO)
+      const img =
+        items[i].getElementsByTagName("image:loc")[0]?.textContent ||
+        items[i].getElementsByTagName("media:content")[0]?.getAttribute("url");
 
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
-      list.appendChild(li);
+
+      li.innerHTML = `
+        <a href="${link}" target="_blank">
+          ${img ? `<img src="${img}" style="width:120px;display:block;margin-bottom:5px;">` : ""}
+          ${title}
+        </a>
+      `;
+
+      feed.appendChild(li);
     }
 
   } catch (e) {
-    document.getElementById("list").innerHTML =
-      "<li>Error loading (blocked or proxy down)</li>";
+    document.getElementById("feed").innerHTML =
+      "<li>Error loading (CORS or blocked)</li>";
     console.log(e);
   }
 })();
