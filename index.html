@@ -11,34 +11,42 @@
 <ul id="feed">Loading...</ul>
 
 <script>
-fetch("https://lostinberlin.com/feed/")
-  .then(res => res.text())
-  .then(str => {
-    const xml = new DOMParser().parseFromString(str, "text/xml");
-    const items = xml.querySelectorAll("item");
+(async function () {
+  try {
+    const proxy = "https://api.allorigins.win/get?url=";
+    const target = encodeURIComponent("https://lostinberlin.com/feed/");
+
+    const response = await fetch(proxy + target);
+    const data = await response.json();
+
+    const xml = new DOMParser().parseFromString(data.contents, "text/xml");
+    const items = xml.getElementsByTagName("item");
 
     const feed = document.getElementById("feed");
     feed.innerHTML = "";
 
     if (!items.length) {
-      feed.innerHTML = "<li>No articles found</li>";
+      feed.innerHTML = "<li>No articles found (feed blocked or empty)</li>";
       return;
     }
 
-    items.forEach(item => {
-      const title = item.querySelector("title")?.textContent;
-      const link = item.querySelector("link")?.textContent;
+    for (let i = 0; i < items.length; i++) {
+      const title = items[i].getElementsByTagName("title")[0]?.textContent;
+      const link = items[i].getElementsByTagName("link")[0]?.textContent;
+
+      if (!title || !link) continue;
 
       const li = document.createElement("li");
       li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
       feed.appendChild(li);
-    });
-  })
-  .catch(err => {
+    }
+
+  } catch (e) {
     document.getElementById("feed").innerHTML =
-      "<li>Feed blocked by browser (CORS)</li>";
-    console.log(err);
-  });
+      "<li>Feed error (proxy or CORS blocked)</li>";
+    console.error(e);
+  }
+})();
 </script>
 
 </body>
