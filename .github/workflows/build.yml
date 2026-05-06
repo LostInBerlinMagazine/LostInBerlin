@@ -5,6 +5,9 @@ on:
     - cron: "0 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,30 +16,39 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Fetch RSS and build HTML
-        run: |
-          curl -s https://www.lostinberlin.com/feed/ > feed.xml
+      - name: Fetch RSS
+        run: curl -L https://www.lostinberlin.com/feed/ -o feed.xml
 
+      - name: Build HTML (working parser)
+        run: |
           echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
 
-          grep -oP '(?<=<item>).*?(?=</item>)' feed.xml | while read item; do
-            title=$(echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
-            link=$(echo "$item" | grep -oP '(?<=<link>).*?(?=</link>)')
-            img=$(echo "$item" | grep -oP '(?<=<image:image><image:loc>).*?(?=</image:loc>)')
+          awk -v RS="</item>" '
+          /<item>/ {
+            title=""
+            link=""
+            img=""
 
-            echo "<li>" >> index.html
-            if [ ! -z "$img" ]; then
-              echo "<img src='$img' width='120'><br>" >> index.html
-            fi
-            echo "<a href='$link' target='_blank'>$title</a></li>" >> index.html
-          done
+            if (match($0, /<title><!\[CDATA\[(.*?)\]\]><\/title>/, a)) title=a[1]
+            else if (match($0, /<title>(.*?)<\/title>/, a)) title=a[1]
+
+            if (match($0, /<link>(.*?)<\/link>/, a)) link=a[1]
+
+            if (match($0, /<img[^>]*src="([^"]+)"/, a)) img=a[1]
+
+            if (title != "" && link != "") {
+              print "<li>"
+              if (img != "") print "<img src=\"" img "\" width=\"120\"><br>"
+              print "<a href=\"" link "\" target=\"_blank\">" title "</a></li>"
+            }
+          }' feed.xml >> index.html
 
           echo '</ul></body></html>' >> index.html
 
-      - name: Commit and push
+      - name: Commit
         run: |
           git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.email "github-actions@github.com"
           git add index.html
           git commit -m "update feed" || exit 0
           git push
