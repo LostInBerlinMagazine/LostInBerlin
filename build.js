@@ -1,43 +1,44 @@
-const https = require("https");
-const fs = require("fs");
+name: Build RSS Feed Page
 
-https.get("https://www.lostinberlin.com/feed/", (res) => {
-  let data = "";
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
-  res.on("data", chunk => data += chunk);
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  res.on("end", () => {
-    const items = [...data.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    let html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>LostInBerlin Feed</title>
-</head>
-<body>
-<h1>LostInBerlin</h1>
-<ul>
-`;
+      - name: Fetch RSS and build HTML
+        run: |
+          curl -s https://www.lostinberlin.com/feed/ > feed.xml
 
-    for (const item of items) {
-      const block = item[1];
+          echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
 
-      const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1];
-      const img = (block.match(/<image:loc>(.*?)<\/image:loc>/) || [])[1];
+          awk -v RS="</item>" '/<item>/{print $0 "</item>"}' feed.xml | while read item; do
+            title=$(echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
+            link=$(echo "$item" | grep -oP '(?<=<link>).*?(?=</link>)')
+            img=$(echo "$item" | grep -oP '(?<=<image:image><image:loc>).*?(?=</image:loc>)')
 
-      html += `<li>
-        ${img ? `<img src="${img}" width="120"><br>` : ""}
-        <a href="${link}" target="_blank">${title}</a>
-      </li>`;
-    }
+            echo "<li>" >> index.html
 
-    html += "</ul></body></html>";
+            if [ ! -z "$img" ]; then
+              echo "<img src='$img' width='120'><br>" >> index.html
+            fi
 
-    fs.writeFileSync("index.html", html);
-    console.log("done");
-  });
+            echo "<a href='$link' target='_blank'>$title</a></li>" >> index.html
+          done
 
-}).on("error", console.error);
+          echo '</ul></body></html>' >> index.html
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add index.html
+          git commit -m "update feed" || exit 0
+          git push
