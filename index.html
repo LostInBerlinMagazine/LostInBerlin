@@ -2,23 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LostInBerlin - This is Berlin</title>
+    <title>LostinBerlin - This is Berlin!</title>
 </head>
 <body>
-    <h1>lostInBerlin</h1>
-    <div id="rss-feed"></div>
+    <h1>LostInBerlin</h1>
+    <div id="rss-feed">Loading links...</div>
 
     <script>
         const RSS_URL = `https://www.lostinberlin.com/feed/`;
-        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`)
+        // Usiamo un parametro count=100 per il servizio di conversione
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&api_key=00000000000000000000000000000000&count=100`)
             .then(response => response.json())
             .then(data => {
-                let html = '<ul>';
-                data.items.forEach(item => {
-                    html += `<li><a href="${item.link}">${item.title}</a></li>`;
-                });
-                html += '</ul>';
-                document.getElementById('rss-feed').innerHTML = html;
+                if (data.status === 'ok') {
+                    let html = '<ul>';
+                    data.items.forEach(item => {
+                        html += `<li><a href="${item.link}">${item.title}</a></li>`;
+                    });
+                    html += '</ul>';
+                    document.getElementById('rss-feed').innerHTML = html;
+                } else {
+                    document.getElementById('rss-feed').innerHTML = "Error loading feed.";
+                }
+            })
+            .catch(err => {
+                document.getElementById('rss-feed').innerHTML = "Connection error.";
             });
     </script>
 </body>
