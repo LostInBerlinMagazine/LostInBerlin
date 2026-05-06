@@ -1,16 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>LostinBerlin - This is Berlin!</title>
+  <meta charset="UTF-8">
+  <title>LostInBerlin - This is Berlin</title>
 </head>
 <body>
-    <h1>LostInBerlin</h1>
-    <div id="rss-feed">
-        <script src="https://feed2js.org/feed2js.php?src=https%3A%2F%2Flostinberlin.com%2Ffeed%2F&num=100&targ=y&utf=y" type="text/javascript"></script>
-        <noscript>
-            <a href="https://lostinberlin.com/feed/">View my RSS feed</a>
-        </noscript>
-    </div>
+
+<h1>LostInBerlin</h1>
+<ul id="feed"></ul>
+
+<script>
+fetch("https://api.rss2json.com/v1/api.json?rss_url=https://lostinberlin.com/feed/")
+  .then(res => res.json())
+  .then(data => {
+    const feed = document.getElementById("feed");
+    data.items.slice(0,10).forEach(item => {
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>`;
+      feed.appendChild(li);
+    });
+  });
+</script>
+
 </body>
 </html>
