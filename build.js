@@ -1,8 +1,6 @@
-name: Build RSS Feed Page
+name: Debug RSS Build
 
 on:
-  schedule:
-    - cron: "0 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -13,35 +11,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
 
-      - name: Build index.html from RSS
+      - name: Download RSS + debug
         run: |
-          curl -s https://www.lostinberlin.com/feed/ > feed.xml
+          echo "DOWNLOADING FEED..."
+          curl -L https://www.lostinberlin.com/feed/ -o feed.xml
 
+          echo "FILE SIZE:"
+          wc -c feed.xml
+
+          echo "FIRST 30 LINES:"
+          head -n 30 feed.xml
+
+      - name: Build HTML (safe minimal)
+        run: |
           echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
 
-          grep -oP '(?s)<item>.*?</item>' feed.xml | while read item; do
-            title=$(echo "$item" | grep -oP '(?<=<title><!\[CDATA\[).*?(?=\]\]>)' || echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
-            link=$(echo "$item" | grep -oP '(?<=<link>).*?(?=</link>)')
-            img=$(echo "$item" | grep -oP '(?<=<img[^>]*src=")[^"]+')
-
-            echo "<li>" >> index.html
-            if [ ! -z "$img" ]; then
-              echo "<img src='$img' width='120'><br>" >> index.html
-            fi
-            echo "<a href='$link' target='_blank'>$title</a></li>" >> index.html
-          done
+          echo "<li>DEBUG MODE - check Actions logs</li>" >> index.html
 
           echo '</ul></body></html>' >> index.html
 
-      - name: Commit changes
+      - name: Commit result
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add index.html
-          git commit -m "update feed" || exit 0
-          git push origin main
+          git add index.html feed.xml
+          git commit -m "debug feed" || exit 0
+          git push
