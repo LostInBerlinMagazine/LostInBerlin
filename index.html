@@ -9,36 +9,24 @@
     <div id="rss-feed">Loading links...</div>
 
     <script>
-        // Usiamo un proxy diverso per evitare i blocchi di rss2json
-        const RSS_URL = 'https://lostinberlin.com/feed';
-        const API_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(RSS_URL)}`;
-
-        fetch(API_URL)
-            .then(response => {
-                if (response.ok) return response.json();
-                throw new Error('Network response was not ok.');
-            })
+        const RSS_URL = 'https://www.lostinberlin.com/feed/';
+        // Usiamo un servizio alternativo per convertire l'XML in JSON
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&count=100&api_key=4p3o6o0o6o0o6o0o6o0o6o0o6o0o6o0o`)
+            .then(response => response.json())
             .then(data => {
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
-                const items = xmlDoc.querySelectorAll("item");
-                let html = '<ul>';
-                
-                // Prendiamo i primi 100 articoli direttamente dal tuo XML
-                items.forEach((item, index) => {
-                    if (index < 100) {
-                        const title = item.querySelector("title").textContent;
-                        const link = item.querySelector("link").textContent;
-                        html += `<li><a href="${link}">${title}</a></li>`;
-                    }
-                });
-                
-                html += '</ul>';
-                document.getElementById('rss-feed').innerHTML = html;
+                if (data.status === 'ok') {
+                    let html = '<ul>';
+                    data.items.forEach(item => {
+                        html += `<li><a href="${item.link}">${item.title}</a></li>`;
+                    });
+                    html += '</ul>';
+                    document.getElementById('rss-feed').innerHTML = html;
+                } else {
+                    document.getElementById('rss-feed').innerHTML = "Il server è sovraccarico, ricarica tra 10 secondi.";
+                }
             })
             .catch(err => {
-                document.getElementById('rss-feed').innerHTML = "Errore di connessione. Riprova tra un istante.";
-                console.error(err);
+                document.getElementById('rss-feed').innerHTML = "Riprova ricaricando la pagina.";
             });
     </script>
 </body>
