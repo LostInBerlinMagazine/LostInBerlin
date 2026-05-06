@@ -5,6 +5,9 @@ on:
     - cron: "0 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,39 +15,31 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
-      - name: Build page from RSS
+      - name: Build index.html
         run: |
           curl -s https://www.lostinberlin.com/feed/ > feed.xml
 
           echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
 
-          awk -v RS="</item>" '
-          /<item>/ {
-            title=""
-            link=""
-            img=""
+          grep -oP '(?s)<item>.*?</item>' feed.xml | while read item; do
+            title=$(echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
+            link=$(echo "$item" | grep -oP '(?<=<link>).*?(?=</link>)')
+            img=$(echo "$item" | grep -oP '(?<=<img[^>]*src=")[^"]+')
 
-            if (match($0, /<title><!\[CDATA\[(.*?)\]\]><\/title>/, a)) title=a[1]
-            else if (match($0, /<title>(.*?)<\/title>/, a)) title=a[1]
-
-            if (match($0, /<link>(.*?)<\/link>/, a)) link=a[1]
-
-            if (match($0, /<img[^>]+src="([^"]+)"/, a)) img=a[1]
-
-            if (title != "" && link != "") {
-              print "<li>"
-              if (img != "") print "<img src=\"" img "\" width=\"120\"><br>"
-              print "<a href=\"" link "\" target=\"_blank\">" title "</a></li>"
-            }
-          }' feed.xml >> index.html
+            echo "<li>" >> index.html
+            if [ ! -z "$img" ]; then
+              echo "<img src='$img' width='120'><br>" >> index.html
+            fi
+            echo "<a href='$link' target='_blank'>$title</a></li>" >> index.html
+          done
 
           echo '</ul></body></html>' >> index.html
 
-      - name: Commit
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add index.html
-          git commit -m "update feed" || exit 0
-          git push
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Yeah!"
+          file_pattern: index.html
