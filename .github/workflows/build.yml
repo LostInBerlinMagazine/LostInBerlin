@@ -24,9 +24,10 @@ jobs:
           python3 - << 'EOF'
           import re
           import requests
+          import time
 
           url = "https://www.lostinberlin.com/feed/"
-          xml = requests.get(url).text
+          xml = requests.get(url, timeout=20).text
 
           items = re.findall(r"<item>(.*?)</item>", xml, re.S)
 
@@ -55,20 +56,22 @@ jobs:
                       html += f'<img src="{img.group(1)}" width="120"><br>'
                   html += f'<a href="{link.group(1)}" target="_blank">{title.group(1)}</a></li>'
 
-          html += """
-            </ul>
-          </body>
-          </html>
-          """
+          # FORZA CAMBIAMENTO SEMPRE (anti "nothing to commit")
+          html += f"\n<!-- build time: {time.time()} -->\n"
+          html += "</ul></body></html>"
 
           with open("index.html", "w", encoding="utf-8") as f:
               f.write(html)
           EOF
 
-      - name: Commit and push
+      - name: Commit and push (forced update)
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           git add index.html
-          git commit -m "update feed" || exit 0
+
+          # forza commit SEMPRE (anche se git non rileva diff)
+          git commit -m "update feed $(date +%s)" || true
+
           git push origin main
