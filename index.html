@@ -2,37 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LostInBerlin - This is Berlin</title>
+  <title>LostInBerlin - This is Berlin!</title>
 </head>
 <body>
 
 <h1>LostInBerlin</h1>
+
 <ul id="feed">Loading...</ul>
 
 <script>
-const rss = "https://lostinberlin.com/feed/";
-const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(rss) + "&count=100";
+(async function () {
+  try {
+    const response = await fetch("https://lostinberlin.com/feed/");
+    const text = await response.text();
 
-fetch(url)
-  .then(res => res.json())
-  .then(data => {
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "text/xml");
+
+    const items = xml.getElementsByTagName("item");
     const feed = document.getElementById("feed");
+
     feed.innerHTML = "";
 
-    if (!data.items || data.items.length === 0) {
+    if (!items || items.length === 0) {
       feed.innerHTML = "<li>No article found</li>";
       return;
     }
 
-    data.items.forEach(item => {
+    for (let i = 0; i < items.length; i++) {
+      const title = items[i].getElementsByTagName("title")[0]?.textContent;
+      const link = items[i].getElementsByTagName("link")[0]?.textContent;
+
+      if (!title || !link) continue;
+
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>`;
+      li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
       feed.appendChild(li);
-    });
-  })
-  .catch(() => {
-    document.getElementById("feed").innerHTML = "<li>Errore caricamento feed</li>";
-  });
+    }
+
+  } catch (e) {
+    document.getElementById("feed").innerHTML =
+      "<li>Error loading</li>";
+  }
+})();
 </script>
 
 </body>
