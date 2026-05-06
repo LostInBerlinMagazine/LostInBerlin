@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>LostInBerlin - This is Berlin</title>
@@ -10,15 +10,26 @@
 <ul id="feed"></ul>
 
 <script>
-fetch("https://api.rss2json.com/v1/api.json?rss_url=https://lostinberlin.com/feed/")
+fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://lostinberlin.com/feed/"))
   .then(res => res.json())
   .then(data => {
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(data.contents, "text/xml");
+    const items = xml.querySelectorAll("item");
+
     const feed = document.getElementById("feed");
-    data.items.slice(0,10).forEach(item => {
+
+    items.forEach(el => {
+      const title = el.querySelector("title").textContent;
+      const link = el.querySelector("link").textContent;
+
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>`;
+      li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
       feed.appendChild(li);
     });
+  })
+  .catch(err => {
+    document.getElementById("feed").innerHTML = "Errore nel caricamento feed";
   });
 </script>
 
