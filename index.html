@@ -2,49 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LostInBerlin Feed</title>
+  <title>LostInBerlin - This is Berlin!</title>
 </head>
 <body>
 
 <h1>LostInBerlin</h1>
 
-<ul id="feed">Loading...</ul>
+<ul id="list">Loading...</ul>
 
 <script>
 (async function () {
   try {
-    const proxy = "https://api.allorigins.win/get?url=";
-    const target = encodeURIComponent("https://lostinberlin.com/feed/");
+    const res = await fetch("https://www.lostinberlin.com/post-sitemap.xml");
+    const text = await res.text();
 
-    const response = await fetch(proxy + target);
-    const data = await response.json();
+    const xml = new DOMParser().parseFromString(text, "text/xml");
 
-    const xml = new DOMParser().parseFromString(data.contents, "text/xml");
-    const items = xml.getElementsByTagName("item");
+    // prende SOLO i tag <loc>, ignorando tutto il resto
+    const locs = xml.getElementsByTagName("loc");
 
-    const feed = document.getElementById("feed");
-    feed.innerHTML = "";
+    const list = document.getElementById("list");
+    list.innerHTML = "";
 
-    if (!items.length) {
-      feed.innerHTML = "<li>No articles found (feed blocked or empty)</li>";
-      return;
-    }
-
-    for (let i = 0; i < items.length; i++) {
-      const title = items[i].getElementsByTagName("title")[0]?.textContent;
-      const link = items[i].getElementsByTagName("link")[0]?.textContent;
-
-      if (!title || !link) continue;
+    for (let i = 0; i < locs.length; i++) {
+      const url = locs[i].textContent;
 
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
-      feed.appendChild(li);
+      li.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+      list.appendChild(li);
     }
 
   } catch (e) {
-    document.getElementById("feed").innerHTML =
-      "<li>Feed error (proxy or CORS blocked)</li>";
-    console.error(e);
+    document.getElementById("list").innerHTML =
+      "<li>Error loading</li>";
   }
 })();
 </script>
