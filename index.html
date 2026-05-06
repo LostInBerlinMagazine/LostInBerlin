@@ -9,9 +9,9 @@
     <div id="rss-feed">Loading links...</div>
 
     <script>
-        const RSS_URL = `https://www.lostinberlin.com/feed/`;
-        // Usiamo un parametro count=100 per il servizio di conversione
-        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&api_key=00000000000000000000000000000000&count=100`)
+        const RSS_URL = 'https://lostinberlin.com/feed';
+        
+        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&count=100`)
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'ok') {
