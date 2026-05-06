@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LostInBerlin - This is Berlin!</title>
+  <title>LostInBerlin Sitemap</title>
 </head>
 <body>
 
@@ -13,16 +13,22 @@
 <script>
 (async function () {
   try {
-    const res = await fetch("https://www.lostinberlin.com/post-sitemap.xml");
+    const proxyUrl = "https://api.allorigins.win/raw?url=";
+    const target = encodeURIComponent("https://www.lostinberlin.com/post-sitemap.xml");
+
+    const res = await fetch(proxyUrl + target);
     const text = await res.text();
 
     const xml = new DOMParser().parseFromString(text, "text/xml");
-
-    // prende SOLO i tag <loc>, ignorando tutto il resto
     const locs = xml.getElementsByTagName("loc");
 
     const list = document.getElementById("list");
     list.innerHTML = "";
+
+    if (!locs.length) {
+      list.innerHTML = "<li>No URLs found</li>";
+      return;
+    }
 
     for (let i = 0; i < locs.length; i++) {
       const url = locs[i].textContent;
@@ -34,7 +40,8 @@
 
   } catch (e) {
     document.getElementById("list").innerHTML =
-      "<li>Error loading</li>";
+      "<li>Error loading (blocked or proxy down)</li>";
+    console.log(e);
   }
 })();
 </script>
