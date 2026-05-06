@@ -16,16 +16,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          ref: main
 
-      - name: Build index.html
+      - name: Build index.html from RSS
         run: |
           curl -s https://www.lostinberlin.com/feed/ > feed.xml
 
           echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
 
           grep -oP '(?s)<item>.*?</item>' feed.xml | while read item; do
-            title=$(echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
+            title=$(echo "$item" | grep -oP '(?<=<title><!\[CDATA\[).*?(?=\]\]>)' || echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
             link=$(echo "$item" | grep -oP '(?<=<link>).*?(?=</link>)')
             img=$(echo "$item" | grep -oP '(?<=<img[^>]*src=")[^"]+')
 
@@ -38,8 +38,10 @@ jobs:
 
           echo '</ul></body></html>' >> index.html
 
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Yeah!"
-          file_pattern: index.html
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add index.html
+          git commit -m "update feed" || exit 0
+          git push origin main
