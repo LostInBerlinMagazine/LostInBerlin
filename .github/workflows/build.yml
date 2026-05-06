@@ -1,0 +1,42 @@
+name: Build RSS Feed Page
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch RSS and build HTML
+        run: |
+          curl -s https://www.lostinberlin.com/feed/ > feed.xml
+
+          echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LostInBerlin</title></head><body><h1>LostInBerlin</h1><ul>' > index.html
+
+          grep -oP '(?<=<item>).*?(?=</item>)' feed.xml | while read item; do
+            title=$(echo "$item" | grep -oP '(?<=<title>).*?(?=</title>)')
+            link=$(echo "$item" | grep -oP '(?<=<link>).*?(?=</link>)')
+            img=$(echo "$item" | grep -oP '(?<=<image:image><image:loc>).*?(?=</image:loc>)')
+
+            echo "<li>" >> index.html
+            if [ ! -z "$img" ]; then
+              echo "<img src='$img' width='120'><br>" >> index.html
+            fi
+            echo "<a href='$link' target='_blank'>$title</a></li>" >> index.html
+          done
+
+          echo '</ul></body></html>' >> index.html
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add index.html
+          git commit -m "update feed" || exit 0
+          git push
