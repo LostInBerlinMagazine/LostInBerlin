@@ -2,13 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LostInBerlin - This is Berlin!</title>
+  <title>LostInBerlin - This is Berlin</title>
 </head>
 <body>
 
 <h1>LostInBerlin</h1>
+<ul id="feed">Loading...</ul>
 
-<script src="https://feed.mikle.com/js/fw-loader.js" data-fw-param="157209/"></script>
+<script>
+const rss = "https://lostinberlin.com/feed/";
+const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(rss) + "&count=100";
+
+fetch(url)
+  .then(res => res.json())
+  .then(data => {
+    const feed = document.getElementById("feed");
+    feed.innerHTML = "";
+
+    if (!data.items || data.items.length === 0) {
+      feed.innerHTML = "<li>No article found</li>";
+      return;
+    }
+
+    data.items.forEach(item => {
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>`;
+      feed.appendChild(li);
+    });
+  })
+  .catch(() => {
+    document.getElementById("feed").innerHTML = "<li>Errore caricamento feed</li>";
+  });
+</script>
 
 </body>
 </html>
