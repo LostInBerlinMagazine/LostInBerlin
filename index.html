@@ -2,42 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LostInBerlin - This is Berlin</title>
+  <title>LostInBerlin - This is Berlin!</title>
 </head>
 <body>
 
 <h1>LostInBerlin</h1>
-<ul id="feed">Loading...</ul>
 
-<script>
-fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://lostinberlin.com/feed/"))
-  .then(res => res.text())
-  .then(str => {
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(str, "text/xml");
-    const items = xml.querySelectorAll("item");
-
-    const feed = document.getElementById("feed");
-    feed.innerHTML = "";
-
-    if (items.length === 0) {
-      feed.innerHTML = "<li>Nessun articolo trovato</li>";
-      return;
-    }
-
-    items.forEach(el => {
-      const title = el.querySelector("title")?.textContent;
-      const link = el.querySelector("link")?.textContent;
-
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
-      feed.appendChild(li);
-    });
-  })
-  .catch(() => {
-    document.getElementById("feed").innerHTML = "<li>Errore nel caricamento</li>";
-  });
-</script>
+<script src="https://feed.mikle.com/js/fw-loader.js" data-fw-param="157209/"></script>
 
 </body>
 </html>
