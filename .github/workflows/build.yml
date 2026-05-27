@@ -56,7 +56,6 @@ jobs:
                       html += f'<img src="{img.group(1)}" width="120"><br>'
                   html += f'<a href="{link.group(1)}" target="_blank">{title.group(1)}</a></li>'
 
-          # FORZA CAMBIAMENTO SEMPRE (anti "nothing to commit")
           html += f"\n<!-- build time: {time.time()} -->\n"
           html += "</ul></body></html>"
 
@@ -64,14 +63,14 @@ jobs:
               f.write(html)
           EOF
 
-      - name: Commit and push (forced update)
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add index.html
 
-          # forza commit SEMPRE (anche se git non rileva diff)
           git commit -m "update feed $(date +%s)" || true
 
+          git pull --rebase origin main
           git push origin main
