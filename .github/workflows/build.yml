@@ -27,7 +27,9 @@ jobs:
           import time
 
           url = "https://www.lostinberlin.com/feed/"
-          xml = requests.get(url, timeout=20).text
+          r = requests.get(url, timeout=20)
+          r.raise_for_status()
+          xml = r.text
 
           items = re.findall(r"<item>(.*?)</item>", xml, re.S)
 
@@ -70,7 +72,6 @@ jobs:
 
           git add index.html
 
-          git commit -m "update feed $(date +%s)" || true
+          git commit -m "update feed $(date +%s)" || echo "no changes"
 
-          git pull --rebase origin main
-          git push origin main
+          git push origin HEAD:main
