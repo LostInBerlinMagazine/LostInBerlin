@@ -72,6 +72,7 @@ jobs:
 
           git add index.html
 
-          git commit -m "update feed $(date +%s)" || echo "no changes"
+          git diff --cached --quiet && echo "No changes" && exit 0
 
+          git commit -m "update feed $(date +%s)"
           git push origin HEAD:main
