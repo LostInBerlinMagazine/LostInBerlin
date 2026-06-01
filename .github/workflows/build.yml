@@ -1,4 +1,4 @@
-name: Build RSS Feed Page
+name: Build RSS Page
 
 on:
   schedule:
@@ -13,66 +13,61 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Python requests
+      - name: Install dependencies
         run: pip install requests
 
-      - name: Build index.html from RSS
+      - name: Generate RSS HTML
         run: |
           python3 - << 'EOF'
-          import re
           import requests
-          import time
+          import xml.etree.ElementTree as ET
 
           url = "https://www.lostinberlin.com/feed/"
           r = requests.get(url, timeout=20)
           r.raise_for_status()
-          xml = r.text
 
-          items = re.findall(r"<item>(.*?)</item>", xml, re.S)
+          root = ET.fromstring(r.content)
+          items = root.findall(".//item")
 
-          html = """<!DOCTYPE html>
+          html = """<!doctype html>
           <html>
           <head>
-            <meta charset="UTF-8">
-            <title>LostInBerlin</title>
+            <meta charset="utf-8">
+            <title>RSS Feed</title>
           </head>
           <body>
-            <h1>LostInBerlin</h1>
+            <h1>Latest posts</h1>
             <ul>
           """
 
           for item in items:
-              title = re.search(r"<title><!\[CDATA\[(.*?)\]\]></title>", item)
-              if not title:
-                  title = re.search(r"<title>(.*?)</title>", item)
+              title = item.find("title")
+              link = item.find("link")
 
-              link = re.search(r"<link>(.*?)</link>", item)
-              img = re.search(r'src="([^"]+)"', item)
+              if title is not None and link is not None:
+                  html += f'<li><a href="{link.text}" target="_blank">{title.text}</a></li>'
 
-              if title and link:
-                  html += "<li>"
-                  if img:
-                      html += f'<img src="{img.group(1)}" width="120"><br>'
-                  html += f'<a href="{link.group(1)}" target="_blank">{title.group(1)}</a></li>'
-
-          html += f"\n<!-- build time: {time.time()} -->\n"
           html += "</ul></body></html>"
 
           with open("index.html", "w", encoding="utf-8") as f:
               f.write(html)
           EOF
 
-      - name: Commit and push
+      - name: Commit & Push safely
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add index.html
 
-          git diff --cached --quiet && echo "No changes" && exit 0
+          # NON rompe mai il workflow
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
 
-          git commit -m "update feed $(date +%s)"
+          git commit -m "update rss"
           git push origin HEAD:main
