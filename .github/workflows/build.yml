@@ -39,7 +39,7 @@ jobs:
             <title>RSS Feed</title>
           </head>
           <body>
-            <h1>Latest posts</h1>
+            <h1>LostInBerlin Articles</h1>
             <ul>
           """
 
